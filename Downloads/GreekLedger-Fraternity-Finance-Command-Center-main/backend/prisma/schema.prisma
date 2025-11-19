@@ -1,0 +1,222 @@
+// Prisma schema for GreekLedger
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./greekledger.db"
+}
+
+model Member {
+  id                String    @id @default(uuid())
+  firstName         String
+  lastName          String
+  email             String    @unique
+  phoneNumber       String?
+  pledgeClass       String
+  status            MemberStatus @default(ACTIVE)
+  joinDate          DateTime  @default(now())
+  
+  // Dues tracking
+  duesOwed          Float     @default(0)
+  duesPaid          Float     @default(0)
+  outstandingBalance Float    @default(0)
+  paymentPlan       Boolean   @default(false)
+  paymentPlanDetails String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  payments          Payment[]
+  reimbursements    Reimbursement[]
+}
+
+enum MemberStatus {
+  ACTIVE
+  ALUMNI
+  SUSPENDED
+  INACTIVE
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  amount      Float
+  paymentDate DateTime @default(now())
+  semester    String
+  notes       String?
+  lateFee     Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Reimbursement {
+  id          String              @id @default(uuid())
+  memberId    String
+  member      Member              @relation(fields: [memberId], references: [id])
+  amount      Float
+  description String
+  event       String
+  category    ExpenseCategory
+  status      ReimbursementStatus @default(PENDING)
+  receiptPath String?
+  submittedAt DateTime            @default(now())
+  reviewedAt  DateTime?
+  paidAt      DateTime?
+  reviewNotes String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+enum ReimbursementStatus {
+  PENDING
+  APPROVED
+  DENIED
+  PAID
+}
+
+enum ExpenseCategory {
+  SOCIAL
+  PHILANTHROPY
+  OPERATIONS
+  RECRUITMENT
+  NATIONALS
+  HOUSING
+  ATHLETICS
+  ACADEMIC
+  OTHER
+}
+
+model Event {
+  id              String    @id @default(uuid())
+  name            String
+  date            DateTime
+  description     String?
+  category        ExpenseCategory
+  
+  // Budget
+  plannedBudget   Float
+  actualSpent     Float     @default(0)
+  
+  // Breakdown
+  budgetBreakdown String?   // JSON: {venue: 500, food: 300, ...}
+  actualBreakdown String?   // JSON: {venue: 520, food: 280, ...}
+  
+  status          EventStatus @default(PLANNED)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  expenses        EventExpense[]
+}
+
+enum EventStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model EventExpense {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  description String
+  category    String   // venue, food, transportation, etc.
+  amount      Float
+  receiptPath String?
+  createdAt   DateTime @default(now())
+}
+
+model RecurringTransaction {
+  id          String              @id @default(uuid())
+  name        String
+  type        TransactionType
+  category    ExpenseCategory?
+  amount      Float
+  frequency   Frequency
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean             @default(true)
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum Frequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+  SEMESTER
+}
+
+model ChapterSettings {
+  id                    String   @id @default(uuid())
+  chapterName           String
+  semesterDuesAmount    Float
+  minReserveThreshold   Float    @default(2000)
+  lateFeePercentage     Float    @default(0.05)
+  lateFeeGracePeriod    Int      @default(7) // days
+  
+  // Notification settings
+  emailEnabled          Boolean  @default(false)
+  emailHost             String?
+  emailPort             Int?
+  emailUser             String?
+  emailPassword         String?
+  
+  discordEnabled        Boolean  @default(false)
+  discordBotToken       String?
+  discordChannelId      String?
+  
+  reminderFrequency     String   @default("WEEKLY") // DAILY, WEEKLY, MONTHLY
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Scenario {
+  id                  String   @id @default(uuid())
+  name                String
+  memberCount         Int
+  duesAmount          Float
+  expectedExpenses    Float
+  projectedSurplus    Float
+  maxEventBudget      Float
+  notes               String?
+  createdAt           DateTime @default(now())
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  type        NotificationType
+  recipientId String?
+  subject     String
+  message     String
+  sentAt      DateTime?
+  status      NotificationStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  PAYMENT_CONFIRMATION
+  REIMBURSEMENT_STATUS
+  LOW_RESERVES
+  EVENT_BUDGET_ALERT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
