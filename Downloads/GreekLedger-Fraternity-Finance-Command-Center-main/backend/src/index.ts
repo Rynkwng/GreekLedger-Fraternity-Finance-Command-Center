@@ -14,6 +14,8 @@ import scenarioRoutes from './routes/scenarios';
 import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notifications';
 import exportRoutes from './routes/exports';
+import stripeRoutes from './routes/stripe';
+import smsRoutes from './routes/sms';
 
 // Import services
 import { startReminderBot } from './services/reminderBot';
@@ -44,6 +46,8 @@ app.use('/api/scenarios', scenarioRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/exports', exportRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/sms', smsRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {

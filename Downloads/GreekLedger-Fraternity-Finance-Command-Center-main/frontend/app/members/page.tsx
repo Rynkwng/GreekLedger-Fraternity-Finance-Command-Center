@@ -9,6 +9,7 @@ interface Member {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber?: string;
   pledgeClass: string;
   status: string;
   duesOwed: number;
@@ -21,6 +22,9 @@ export default function MembersPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [paymentLink, setPaymentLink] = useState<string>('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -82,6 +86,54 @@ export default function MembersPage() {
     }
   };
 
+  const generatePaymentLink = async (member: Member) => {
+    try {
+      setSelectedMember(member);
+      const response = await axios.post('/api/stripe/create-payment-link', {
+        memberId: member.id,
+        amount: member.outstandingBalance,
+        description: 'Outstanding Dues Payment',
+      });
+      
+      setPaymentLink(response.data.paymentLink);
+      setShowPaymentModal(true);
+      toast.success('Payment link generated!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to generate payment link. Check Stripe configuration.');
+    }
+  };
+
+  const sendPaymentLinkSMS = async (member: Member) => {
+    try {
+      const linkResponse = await axios.post('/api/stripe/create-payment-link', {
+        memberId: member.id,
+        amount: member.outstandingBalance,
+        description: 'Outstanding Dues Payment',
+      });
+
+      await axios.post(`/api/sms/send-reminder/${member.id}`, {
+        paymentLink: linkResponse.data.paymentLink,
+      });
+
+      toast.success(`SMS sent to ${member.firstName}!`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to send SMS');
+    }
+  };
+
+  const generateBulkPaymentLinks = async () => {
+    try {
+      const response = await axios.post('/api/stripe/create-bulk-payment-links');
+      toast.success(`Generated ${response.data.count} payment links!`);
+      
+      // Show links in console for now (you could display in a modal)
+      console.log('Payment Links:', response.data.paymentLinks);
+      alert(`Generated ${response.data.count} payment links. Check console for details.`);
+    } catch (error) {
+      toast.error('Failed to generate bulk payment links');
+    }
+  };
+
   const getStatusColor = (member: Member) => {
     if (member.outstandingBalance === 0) return 'bg-green-100 text-green-800';
     if (member.duesPaid > 0) return 'bg-yellow-100 text-yellow-800';
@@ -102,9 +154,14 @@ export default function MembersPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Members & Dues</h1>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          + Add Member
-        </button>
+        <div className="flex gap-3">
+          <button onClick={generateBulkPaymentLinks} className="btn-primary">
+            💳 Generate All Payment Links
+          </button>
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            + Add Member
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -141,12 +198,13 @@ export default function MembersPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pledge Class</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dues Owed</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outstanding</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -158,7 +216,8 @@ export default function MembersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {member.email}
+                    <div>{member.email}</div>
+                    {member.phoneNumber && <div className="text-xs">{member.phoneNumber}</div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {member.pledgeClass}
@@ -176,6 +235,28 @@ export default function MembersPage() {
                     <span className={`badge ${getStatusColor(member)}`}>
                       {getStatusText(member)}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {member.outstandingBalance > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => generatePaymentLink(member)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Generate payment link"
+                        >
+                          💳
+                        </button>
+                        {member.phoneNumber && (
+                          <button
+                            onClick={() => sendPaymentLinkSMS(member)}
+                            className="text-green-600 hover:text-green-800"
+                            title="Send SMS reminder"
+                          >
+                            📱
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -221,10 +302,11 @@ export default function MembersPage() {
                 />
               </div>
               <div>
-                <label className="label">Phone Number</label>
+                <label className="label">Phone Number (for SMS)</label>
                 <input
                   type="tel"
                   className="input"
+                  placeholder="+1234567890"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                 />
@@ -266,7 +348,42 @@ export default function MembersPage() {
           </div>
         </div>
       )}
+
+      {/* Payment Link Modal */}
+      {showPaymentModal && selectedMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-lg w-full">
+            <h2 className="text-2xl font-bold mb-4">
+              Payment Link for {selectedMember.firstName} {selectedMember.lastName}
+            </h2>
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">Amount: ${selectedMember.outstandingBalance.toFixed(2)}</p>
+              <div className="bg-gray-50 p-4 rounded-lg break-all">
+                <a href={paymentLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  {paymentLink}
+                </a>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentLink);
+                  toast.success('Link copied to clipboard!');
+                }}
+                className="btn-primary flex-1"
+              >
+                📋 Copy Link
+              </button>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="btn-secondary flex-1"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

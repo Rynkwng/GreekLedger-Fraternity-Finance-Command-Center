@@ -3,11 +3,12 @@ import { PrismaClient, ReimbursementStatus } from '@prisma/client';
 import { UploadedFile } from 'express-fileupload';
 import path from 'path';
 import fs from 'fs';
+import { uploadReceipt } from '../services/cloudinary';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists (fallback if Cloudinary not configured)
 const uploadsDir = path.join(__dirname, '../../uploads/receipts');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -60,10 +61,17 @@ router.post('/', async (req: Request, res: Response) => {
     // Handle file upload
     if (req.files && req.files.receipt) {
       const receipt = req.files.receipt as UploadedFile;
-      const fileName = `${Date.now()}_${receipt.name}`;
-      receiptPath = `/uploads/receipts/${fileName}`;
       
-      await receipt.mv(path.join(uploadsDir, fileName));
+      try {
+        // Try Cloudinary first
+        receiptPath = await uploadReceipt(receipt);
+      } catch (error) {
+        // Fallback to local storage
+        console.log('Falling back to local storage for receipt');
+        const fileName = `${Date.now()}_${receipt.name}`;
+        receiptPath = `/uploads/receipts/${fileName}`;
+        await receipt.mv(path.join(uploadsDir, fileName));
+      }
     }
     
     const reimbursement = await prisma.reimbursement.create({

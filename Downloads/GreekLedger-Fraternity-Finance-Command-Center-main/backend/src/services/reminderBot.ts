@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import { sendEmailNotification, sendDiscordNotification } from './notifications';
+import { sendBulkPaymentReminders } from './sms';
 
 const prisma = new PrismaClient();
 
@@ -78,6 +79,13 @@ async function sendPaymentReminders() {
       }
     }
     
+    // Send SMS reminders if Twilio is configured
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+      console.log('📱 Sending SMS reminders...');
+      const smsResults = await sendBulkPaymentReminders();
+      console.log(`SMS sent: ${smsResults.sent}, failed: ${smsResults.failed}`);
+    }
+    
     // Send Discord summary
     if (settings?.discordEnabled && membersWithBalance.length > 0) {
       const totalOutstanding = membersWithBalance.reduce(
@@ -88,7 +96,7 @@ async function sendPaymentReminders() {
       const discordMessage = `📊 **Weekly Dues Update**\n\n` +
         `${membersWithBalance.length} members have outstanding balances\n` +
         `Total outstanding: $${totalOutstanding.toFixed(2)}\n\n` +
-        `Payment reminders have been sent! 💸`;
+        `Payment reminders have been sent via email and SMS! 💸`;
       
       await sendDiscordNotification(discordMessage);
     }

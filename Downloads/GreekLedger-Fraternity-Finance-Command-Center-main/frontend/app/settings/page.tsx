@@ -173,6 +173,92 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Stripe Settings */}
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">💳 Stripe Payment Processing</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>Stripe enables online payments!</strong> Members can pay dues via credit/debit card.
+              Get your API keys from{' '}
+              <a
+                href="https://dashboard.stripe.com/apikeys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                Stripe Dashboard
+              </a>
+            </p>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            <strong>Setup Guide:</strong> Create a Stripe account → Get API keys → Add to backend/.env file
+          </p>
+          <div className="bg-gray-100 p-3 rounded text-xs font-mono mb-4">
+            STRIPE_SECRET_KEY=sk_test_...<br />
+            STRIPE_WEBHOOK_SECRET=whsec_...
+          </div>
+          <p className="text-sm text-gray-600">
+            ✅ Once configured, you can generate payment links from the Members page!
+          </p>
+        </div>
+
+        {/* Twilio SMS Settings */}
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">📱 Twilio SMS Notifications</h2>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-green-800">
+              <strong>SMS has 98% open rate!</strong> Send payment reminders via text message.
+              Get your credentials from{' '}
+              <a
+                href="https://console.twilio.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                Twilio Console
+              </a>
+            </p>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            <strong>Cost:</strong> ~$0.0079 per SMS (very affordable!)
+          </p>
+          <div className="bg-gray-100 p-3 rounded text-xs font-mono mb-4">
+            TWILIO_ACCOUNT_SID=AC...<br />
+            TWILIO_AUTH_TOKEN=your-token<br />
+            TWILIO_PHONE_NUMBER=+1234567890
+          </div>
+          <p className="text-sm text-gray-600">
+            ✅ SMS reminders will be sent automatically every Monday at 9 AM!
+          </p>
+        </div>
+
+        {/* Cloudinary Settings */}
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">☁️ Cloudinary File Storage</h2>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-purple-800">
+              <strong>Free 25GB storage!</strong> Store receipt images securely in the cloud.
+              Get credentials from{' '}
+              <a
+                href="https://cloudinary.com/console"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                Cloudinary Console
+              </a>
+            </p>
+          </div>
+          <div className="bg-gray-100 p-3 rounded text-xs font-mono mb-4">
+            CLOUDINARY_CLOUD_NAME=your-name<br />
+            CLOUDINARY_API_KEY=your-key<br />
+            CLOUDINARY_API_SECRET=your-secret
+          </div>
+          <p className="text-sm text-gray-600">
+            ✅ Receipts will automatically upload to Cloudinary instead of local storage!
+          </p>
+        </div>
+
         {/* Discord Settings */}
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Discord Integration</h2>

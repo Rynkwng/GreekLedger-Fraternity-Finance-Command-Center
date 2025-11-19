@@ -149,6 +149,35 @@ The application will be available at:
 - **Backend API**: http://localhost:3001
 - **API Health Check**: http://localhost:3001/api/health
 
+## 🚀 **NEW: API Integrations**
+
+GreekLedger now supports powerful API integrations! Transform from a tracking system into a **full payment automation platform**.
+
+### ⭐ Stripe Payment Processing
+- **Accept online payments** via credit/debit card
+- **Generate payment links** for each member
+- **Automatic payment tracking** via webhooks
+- **Cost:** 2.9% + $0.30 per transaction
+- **Setup:** 30 minutes → See `API_INTEGRATIONS_GUIDE.md`
+
+### ⭐ Twilio SMS Notifications
+- **98% open rate** vs 20% for email!
+- Send payment reminders via text
+- Payment confirmations
+- **Cost:** ~$0.0079 per SMS (~$8/month for 1,000 SMS)
+- **Setup:** 15 minutes → See `API_INTEGRATIONS_GUIDE.md`
+
+### ⭐ Cloudinary File Storage
+- **Free 25GB** cloud storage for receipts
+- Automatic image optimization
+- Fast CDN delivery
+- **Cost:** FREE
+- **Setup:** 10 minutes → See `API_INTEGRATIONS_GUIDE.md`
+
+**📚 Full setup guide:** See [API_INTEGRATIONS_GUIDE.md](./API_INTEGRATIONS_GUIDE.md)
+
+---
+
 ## 🔧 Configuration
 
 ### Email Notifications
